@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Chamados</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        input[type="text"], 
+        select, 
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            margin: 20px auto 0;
+            width: 200px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .status-message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Formulário de Chamados</h1>
+        <form id="chamadoForm">
+            <div class="form-group">
+                <label for="descricao">Descrição do Chamado*</label>
+                <textarea id="descricao" name="descricao" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="prioridade">Prioridade*</label>
+                <select id="prioridade" name="prioridade" required>
+                    <option value="" disabled selected>Selecione a prioridade</option>
+                    <option value="Baixa">Baixa</option>
+                    <option value="Média">Média</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Crítica">Crítica</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="solicitante">Solicitante*</label>
+                <input type="text" id="solicitante" name="solicitante" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="setor">Setor*</label>
+                <select id="setor" name="setor" required>
+                    <option value="" disabled selected>Selecione o setor</option>
+                    <option value="TI">TI</option>
+                    <option value="RH">RH</option>
+                    <option value="Financeiro">Financeiro</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Operações">Operações</option>
+                    <option value="Comercial">Comercial</option>
+                    <option value="Administrativo">Administrativo</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="status">Status*</label>
+                <select id="status" name="status" required>
+                    <option value="" disabled selected>Selecione o status</option>
+                    <option value="Aberto">Aberto</option>
+                    <option value="Em andamento">Em andamento</option>
+                    <option value="Aguardando informações">Aguardando informações</option>
+                    <option value="Resolvido">Resolvido</option>
+                    <option value="Fechado">Fechado</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="dataSolicitacao">Data da Solicitação*</label>
+                <input type="date" id="dataSolicitacao" name="dataSolicitacao" required>
+            </div>
+            
+            <button type="submit">Enviar Chamado</button>
+        </form>
+        
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Enviando chamado...</p>
+        </div>
+        
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <script>
+        // Definir a data de hoje como padrão
+        document.addEventListener('DOMContentLoaded', function() {
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoje.getDate()).padStart(2, '0');
+            document.getElementById('dataSolicitacao').value = `${ano}-${mes}-${dia}`;
+        });
+
+        document.getElementById('chamadoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            
+            // Obter os valores do formulário
+            const descricao = document.getElementById('descricao').value;
+            const prioridade = document.getElementById('prioridade').value;
+            const solicitante = document.getElementById('solicitante').value;
+            const setor = document.getElementById('setor').value;
+            const status = document.getElementById('status').value;
+            const dataSolicitacao = document.getElementById('dataSolicitacao').value;
+            
+            // Formatar a data para DD/MM/YYYY
+            const dataFormatada = formatarData(dataSolicitacao);
+            
+            // URL do seu Google Apps Script publicado como web app
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbzZBd_DrMFyvT82ix8S5uGNqD2opUc4hHFnqGe_4Z0IxSXrOV3L33YN2a7cuPgDQDbgWQ/exec';
+            
+            // Preparar os dados para envio
+            const formData = {
+                descricao,
+                prioridade,
+                solicitante,
+                setor,
+                status,
+                dataSolicitacao: dataFormatada
+            };
+            
+            // Requisição para o Google Apps Script
+            fetch(scriptURL, {
+                method: 'POST',
+                body: JSON.stringify(formData),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (response.ok) {
+                    mostrarMensagem('Chamado registrado com sucesso!', 'success');
+                    document.getElementById('chamadoForm').reset();
+                    // Resetar a data para hoje
+                    const hoje = new Date();
+                    const ano = hoje.getFullYear();
+                    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+                    const dia = String(hoje.getDate()).padStart(2, '0');
+                    document.getElementById('dataSolicitacao').value = `${ano}-${mes}-${dia}`;
+                } else {
+                    mostrarMensagem('Erro ao registrar chamado. Tente novamente.', 'error');
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                console.error('Erro:', error);
+                mostrarMensagem('Erro ao registrar chamado. Tente novamente.', 'error');
+            });
+        });
+        
+        // Função para formatar a data
+        function formatarData(data) {
+            if (!data) return '';
+            
+            const partes = data.split('-');
+            if (partes.length !== 3) return data;
+            
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        
+        // Função para mostrar mensagem de status
+        function mostrarMensagem(texto, tipo) {
+            const mensagem = document.getElementById('statusMessage');
+            mensagem.textContent = texto;
+            mensagem.className = `status-message ${tipo}`;
+            mensagem.style.display = 'block';
+            
+            // Esconder a mensagem após 5 segundos
+            setTimeout(() => {
+                mensagem.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
